@@ -6,7 +6,18 @@
 
 ```bash
 python -m venv venv
-.\venv\Scripts\activate
+```
+
+## activation de l'environnement virtuel
+- Sur Windows :
+
+```bash
+venv\Scripts\activate
+```
+- Sur macOS/Linux :
+
+```bash
+source venv/bin/activate
 ```
 
 ### 2. installation des dépendances
@@ -18,7 +29,7 @@ pip install -r requirements.txt
 ### 3. création de la base de données
 
 ```bash
-Appliquer les migrations 
+python manage.py migrate
 ```
 
 ### 4. lancement du serveur

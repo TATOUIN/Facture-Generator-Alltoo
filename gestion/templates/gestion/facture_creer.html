@@ -1,93 +1,212 @@
 {% extends 'base.html' %}
 
 {% block content %}
-  <div class="container mt-4">
-    <h2>Créer une facture</h2>
+<div class="container mt-4">
+  <h2>Créer une facture</h2>
 
-    <form method="get" class="row g-2 align-items-end mb-4">
-      <div class="col-sm-4">
-        <label for="q" class="form-label">Rechercher un produit</label>
-        <input type="text" name="q" id="q" value="{{ search_query }}" class="form-control" placeholder="ex: banane">
-      </div>
-      <div class="col-sm-4">
-        <label for="sort" class="form-label">Trier par</label>
-        <select name="sort" id="sort" class="form-select">
-          <option value="nom" {% if sort_option == 'nom' %}selected{% endif %}>Nom A→Z</option>
-          <option value="-nom" {% if sort_option == '-nom' %}selected{% endif %}>Nom Z→A</option>
-          <option value="prix" {% if sort_option == 'prix' %}selected{% endif %}>Prix croissant</option>
-          <option value="-prix" {% if sort_option == '-prix' %}selected{% endif %}>Prix décroissant</option>
-        </select>
-      </div>
-      <div class="col-auto">
-        <button type="submit" class="btn btn-primary">Filtrer</button>
-      </div>
-    </form>
+  <!-- Formulaire de recherche/tri -->
+  <form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-sm-4">
+      <label for="q" class="form-label">Rechercher un produit par nom ou ID</label>
+      <input type="text" name="q" id="q" value="{{ search_query }}" class="form-control" placeholder="ex: banane/12">
+    </div>
+    <div class="col-sm-4">
+      <label for="sort" class="form-label">Trier par</label>
+      <select name="sort" id="sort" class="form-select">
+        <option value="nom" {% if sort_option == 'nom' %}selected{% endif %}>Nom A→Z</option>
+        <option value="-nom" {% if sort_option == '-nom' %}selected{% endif %}>Nom Z→A</option>
+        <option value="prix" {% if sort_option == 'prix' %}selected{% endif %}>Prix croissant</option>
+        <option value="-prix" {% if sort_option == '-prix' %}selected{% endif %}>Prix décroissant</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">Filtrer</button>
+    </div>
+  </form>
 
-    <form method="post">
-      {% csrf_token %}
+  <!-- Formulaire de création de facture -->
+  <form method="post">
+    {% csrf_token %}
 
-      <div class="row">
-        <div class="col-md-8">
-          <ul class="list-group">
-            {% for produit in page_obj %}
-              <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                  <input type="checkbox" name="produits" value="{{ produit.id }}" class="form-check-input me-2">
-                  <strong>{{ produit.nom }}</strong> – {{ produit.prix }} €
-                </div>
-              </li>
-            {% empty %}
-              <li class="list-group-item">Aucun produit disponible</li>
-            {% endfor %}
+    <div class="row">
+      <!-- Liste des produits -->
+      <div class="col-md-8">
+        <ul class="list-group">
+          {% for produit in page_obj %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <div>
+                <input type="checkbox" name="produits" value="{{ produit.id }}"
+                       data-id="{{ produit.id }}"
+                       data-nom="{{ produit.nom }}"
+                       data-prix="{{ produit.prix }}"
+                       class="form-check-input me-2">
+                ID :{{ produit.id }} - <strong>{{ produit.nom }}</strong> – {{ produit.prix }} €
+              </div>
+            </li>
+          {% empty %}
+            <li class="list-group-item">Aucun produit disponible</li>
+          {% endfor %}
+        </ul>
+
+        <!-- Pagination -->
+        <div class="pagination mt-4">
+          {% if page_obj.has_previous %}
+            <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&sort={{ sort_option }}" class="btn btn-outline-secondary">← Précédent</a>
+          {% endif %}
+          <span class="mx-3">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+          {% if page_obj.has_next %}
+            <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&sort={{ sort_option }}" class="btn btn-outline-secondary">Suivant →</a>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Résumé sélection -->
+      <div class="col-md-4">
+        <div class="card">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Produits sélectionnés</span>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearSelection()">Vider</button>
+          </div>
+          <ul class="list-group list-group-flush" id="selected-products">
+            <!-- Rempli dynamiquement en JS -->
           </ul>
-
-          <div class="pagination mt-4">
-            {% if page_obj.has_previous %}
-              <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&sort={{ sort_option }}" class="btn btn-outline-secondary">← Précédent</a>
-            {% endif %}
-
-            <span class="mx-3">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-
-            {% if page_obj.has_next %}
-              <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&sort={{ sort_option }}" class="btn btn-outline-secondary">Suivant →</a>
-            {% endif %}
-          </div>
-        </div>
-
-        <div class="col-md-4">
-          <div class="card">
-            <div class="card-header">
-              Produits sélectionnés
+          <div class="card-footer">
+            <div class="d-flex justify-content-between">
+              <strong>Total :</strong> <span><span id="total-price">0</span> €</span>
             </div>
-            <ul class="list-group list-group-flush" id="selected-products">
-              <!-- Rempli dynamiquement en JS -->
-            </ul>
-          </div>
+            <div class="mt-2 d-flex justify-content-between">
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="prev-page">←</button>
+              <span id="pagination-info" class="align-self-center small"></span>
+              <button type="button" class="btn btn-sm btn-outline-secondary" id="next-page">→</button>
+
+
         </div>
-      </div>
-
-      <button type="submit" class="btn btn-success mt-3">Créer la facture</button>
-    </form>
+              <button type="submit" class="btn btn-success mt-3">Créer la facture</button>
   </div>
+</div>
 
-  <script>
-    const checkboxes = document.querySelectorAll('input[type="checkbox"][name="produits"]');
-    const selectedList = document.getElementById('selected-products');
+      </div>
+    </div>
 
-    function updateSelectedList() {
-      selectedList.innerHTML = '';
-      checkboxes.forEach(cb => {
+  </form>
+</div>
+
+<script>
+  const checkboxes = document.querySelectorAll('input[type="checkbox"][name="produits"]');
+  const selectedList = document.getElementById('selected-products');
+  const totalPrice = document.getElementById('total-price');
+  const form = document.querySelector('form[method="post"]');
+  const itemsPerPage = 4;
+  let currentPage = 1;
+
+  function getSelectedFromStorage() {
+    return JSON.parse(localStorage.getItem('selectedProducts') || '[]');
+  }
+
+  function saveSelectedToStorage(selected) {
+    localStorage.setItem('selectedProducts', JSON.stringify(selected));
+  }
+
+  function updateSelectedUI() {
+    const selected = getSelectedFromStorage();
+    const total = selected.reduce((sum, item) => sum + parseFloat(item.prix), 0);
+    totalPrice.textContent = total.toFixed(2);
+
+    // Pagination
+    const totalPages = Math.max(Math.ceil(selected.length / itemsPerPage), 1);
+    if (currentPage > totalPages) currentPage = totalPages;
+    const start = (currentPage - 1) * itemsPerPage;
+    const pageItems = selected.slice(start, start + itemsPerPage);
+
+    selectedList.innerHTML = '';
+    pageItems.forEach(item => {
+      const li = document.createElement('li');
+      li.className = 'list-group-item d-flex justify-content-between align-items-center';
+      li.innerHTML = `
+        <div>${item.nom} – ${item.prix} €</div>
+        <button class="btn btn-sm btn-outline-danger" onclick="removeFromSelection('${item.id}')">✕</button>
+      `;
+      selectedList.appendChild(li);
+    });
+
+    // Mettre à jour la pagination
+    document.getElementById('pagination-info').textContent = `Page ${currentPage} / ${totalPages}`;
+    document.getElementById('prev-page').disabled = currentPage === 1;
+    document.getElementById('next-page').disabled = currentPage === totalPages;
+  }
+
+  function removeFromSelection(id) {
+    let selected = getSelectedFromStorage().filter(item => item.id !== id);
+    saveSelectedToStorage(selected);
+    updateSelectedUI();
+    // Mettre à jour la checkbox si elle existe sur la page
+    checkboxes.forEach(cb => {
+      if (cb.value === id) cb.checked = false;
+    });
+  }
+
+  function clearSelection() {
+    localStorage.removeItem('selectedProducts');
+    currentPage = 1;
+    updateSelectedUI();
+    checkboxes.forEach(cb => cb.checked = false);
+  }
+
+  function syncCheckboxes() {
+    checkboxes.forEach(cb => {
+      cb.addEventListener('change', () => {
+        let selected = getSelectedFromStorage();
+
         if (cb.checked) {
-          const label = cb.parentNode.innerText.trim();
-          const li = document.createElement('li');
-          li.className = 'list-group-item';
-          li.textContent = label;
-          selectedList.appendChild(li);
+          const produit = {
+            id: cb.value,
+            nom: cb.dataset.nom,
+            prix: cb.dataset.prix
+          };
+          if (!selected.some(item => item.id === produit.id)) {
+            selected.push(produit);
+          }
+        } else {
+          selected = selected.filter(item => item.id !== cb.value);
         }
-      });
-    }
 
-    checkboxes.forEach(cb => cb.addEventListener('change', updateSelectedList));
-    updateSelectedList(); // Init
-  </script>
+        saveSelectedToStorage(selected);
+        updateSelectedUI();
+      });
+    });
+  }
+
+  // Gestion de la soumission
+  form.addEventListener('submit', (e) => {
+    form.querySelectorAll('input[name="produits"]').forEach(input => input.remove());
+    const selected = getSelectedFromStorage();
+    selected.forEach(item => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = 'produits';
+      input.value = item.id;
+      form.appendChild(input);
+    });
+    localStorage.removeItem('selectedProducts');
+  });
+
+  // Pagination boutons
+  document.getElementById('prev-page').addEventListener('click', () => {
+    if (currentPage > 1) {
+      currentPage--;
+      updateSelectedUI();
+    }
+  });
+
+  document.getElementById('next-page').addEventListener('click', () => {
+    currentPage++;
+    updateSelectedUI();
+  });
+
+  // Init
+  updateSelectedUI();
+  syncCheckboxes();
+</script>
+
+
 {% endblock %}

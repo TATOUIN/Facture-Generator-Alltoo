@@ -47,15 +47,39 @@ def produit_ajouter(request):
 
 
 def facture_creer(request):
+    search_query = request.GET.get('q', '')
+    sort_option = request.GET.get('sort', 'nom')
+
+    produits = Produit.objects.all()
+
+    # Filtre
+    if search_query:
+        if search_query.isdigit():
+            produits = produits.filter(id=search_query)
+        else:
+            produits = produits.filter(nom__icontains=search_query)
+
+    # Tri
+    if sort_option in ['nom', '-nom', 'prix', '-prix']:
+        produits = produits.order_by(sort_option)
+
+    # Pagination
+    paginator = Paginator(produits, 7)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     if request.method == 'POST':
         produits_ids = request.POST.getlist('produits')
         if produits_ids:
             facture = Facture.objects.create()
             facture.produits.set(produits_ids)
             return redirect('facture_detail', facture.id)
-    produits = Produit.objects.all()
-    return render(request, 'gestion/facture_form.html', {'produits': produits})
 
+    return render(request, 'gestion/facture_creer.html', {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'sort_option': sort_option
+    })
 def facture_detail(request, facture_id):
     facture = Facture.objects.get(id=facture_id)
     return render(request, 'gestion/facture_detail.html', {'facture': facture})
