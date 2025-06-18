@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>Détail de la facture #{{ facture.id }}</h2>
+  <p>Date : {{ facture.date }}</p>
+  <p>Nombre de produits : {{ facture.nb_produits }}</p>
+  <p>Total : {{ facture.total }} €</p>
+
+  <ul>
+    {% for produit in facture.produits.all %}
+      <li>ID article : {{ produit.id }} - {{ produit.nom }} - {{ produit.prix }} €</li>
+    {% endfor %}
+  </ul>
+
+  <a href="{% url 'produit_list' %}">← Retour à la liste des produits</a>
+{% endblock %}

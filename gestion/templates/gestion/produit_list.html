@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-4">
+
+  <h2>Liste des produits</h2>
+
+  <form method="get" class="row g-2 align-items-end mb-4">
+    <div class="col-sm-4">
+      <label for="q" class="form-label">Recherche ID ou nom</label>
+      <input type="text" name="q" id="q" value="{{ search_query }}" class="form-control" placeholder="ex: banane ou 12">
+    </div>
+
+    <div class="col-sm-4">
+      <label for="sort" class="form-label">Trier par</label>
+      <select name="sort" id="sort" class="form-select">
+        <option value="id" {% if sort_option == 'id' %}selected{% endif %}>ID croissant</option>
+        <option value="-id" {% if sort_option == '-id' %}selected{% endif %}>ID décroissant</option>
+        <option value="nom" {% if sort_option == 'nom' %}selected{% endif %}>Nom A→Z</option>
+        <option value="-nom" {% if sort_option == '-nom' %}selected{% endif %}>Nom Z→A</option>
+        <option value="prix" {% if sort_option == 'prix' %}selected{% endif %}>Prix croissant</option>
+        <option value="-prix" {% if sort_option == '-prix' %}selected{% endif %}>Prix décroissant</option>
+        <option value="date_peremption" {% if sort_option == 'date_peremption' %}selected{% endif %}>Péremption ↑</option>
+        <option value="-date_peremption" {% if sort_option == '-date_peremption' %}selected{% endif %}>Péremption ↓</option>
+      </select>
+    </div>
+
+    <div class="col-auto">
+      <button type="submit" class="btn btn-primary">Filtrer</button>
+    </div>
+    <div class="col-auto">
+      <a href="{% url 'produit_list' %}" class="btn btn-primary">↺ Réinitialiser</a>
+    </div>
+
+  </form>
+
+  <a href="{% url 'produit_ajouter' %}" class="btn btn-success mb-3">➕ Ajouter un produit</a>
+
+
+  <ul class="list-group">
+    {% for produit in page_obj %}
+      <li class="list-group-item">
+        <strong>ID:</strong> {{ produit.id }} – <strong>{{ produit.nom }}</strong> – {{ produit.prix }} € – Péremption : {{ produit.date_peremption }}
+        <div class="mt-1">
+          <a href="{% url 'produit_modifier' produit.id %}" class="btn btn-sm btn-warning">Modifier</a>
+          <a href="{% url 'produit_supprimer' produit.id %}" class="btn btn-sm btn-danger">Supprimer</a>
+        </div>
+      </li>
+    {% empty %}
+      <li class="list-group-item">Aucun produit disponible</li>
+    {% endfor %}
+  </ul>
+
+  <div class="pagination mt-4">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&sort={{ sort_option }}"
+         class="btn btn-outline-secondary">← Précédent</a>
+    {% endif %}
+
+    <span class="mx-3">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&sort={{ sort_option }}"
+         class="btn btn-outline-secondary">Suivant →</a>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

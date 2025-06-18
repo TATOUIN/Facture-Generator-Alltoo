@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-4">
+  <h2>Liste des factures</h2>
+
+    <form method="get" class="row g-2 align-items-end mb-4">
+      <div class="col-sm-4">
+        <label for="q" class="form-label">Rechercher par ID</label>
+        <input type="text" name="q" id="q" value="{{ search_query }}" class="form-control" placeholder="Ex: 12">
+      </div>
+
+      <div class="col-sm-4">
+        <label for="sort" class="form-label">Trier par</label>
+        <select name="sort" id="sort" class="form-select">
+          <option value="-date" {% if sort_option == '-date' %}selected{% endif %}>Date décroissante</option>
+          <option value="date" {% if sort_option == 'date' %}selected{% endif %}>Date croissante</option>
+          <option value="-total" {% if sort_option == '-total' %}selected{% endif %}>Total décroissant</option>
+          <option value="total" {% if sort_option == 'total' %}selected{% endif %}>Total croissant</option>
+        </select>
+      </div>
+
+      <div class="col-auto">
+        <button type="submit" class="btn btn-primary">Filtrer</button>
+      </div>
+    </form>
+
+  <ul>
+    {% for facture in page_obj %}
+      <li>
+        <a href="{% url 'facture_detail' facture.id %}">Facture #{{ facture.id }}</a>
+        – {{ facture.nb_produits }} produits – {{ facture.total }} €
+        – {{ facture.date|date:"d/m/Y H:i" }}
+      </li>
+    {% empty %}
+      <li>Aucune facture pour le moment</li>
+    {% endfor %}
+  </ul>
+
+  <div class="pagination mt-4">
+      {% if page_obj.has_previous %}
+        <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&sort={{ sort_option }}"
+           class="btn btn-outline-secondary">← Précédent</a>
+      {% endif %}
+
+      <span class="mx-3">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+      {% if page_obj.has_next %}
+        <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&sort={{ sort_option }}"
+           class="btn btn-outline-secondary">Suivant →</a>
+      {% endif %}
+  </div>
+
+
+  <a href="{% url 'facture_creer' %}">Créer une nouvelle facture</a>
+{% endblock %}
