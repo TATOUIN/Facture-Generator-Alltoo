@@ -93,119 +93,157 @@
 
 <script>
   const checkboxes = document.querySelectorAll('input[type="checkbox"][name="produits"]');
-  const selectedList = document.getElementById('selected-products');
-  const totalPrice = document.getElementById('total-price');
-  const form = document.querySelector('form[method="post"]');
-  const itemsPerPage = 4;
-  let currentPage = 1;
+const selectedList = document.getElementById('selected-products');
+const totalPrice = document.getElementById('total-price');
+const form = document.querySelector('form[method="post"]');
+const itemsPerPage = 4;
+let currentPage = 1;
 
-  function getSelectedFromStorage() {
-    return JSON.parse(localStorage.getItem('selectedProducts') || '[]');
-  }
+function getSelectedFromStorage() {
+  // selectedProducts: tableau d'objets {id, nom, prix, quantite}
+  return JSON.parse(localStorage.getItem('selectedProducts') || '[]');
+}
 
-  function saveSelectedToStorage(selected) {
-    localStorage.setItem('selectedProducts', JSON.stringify(selected));
-  }
+function saveSelectedToStorage(selected) {
+  localStorage.setItem('selectedProducts', JSON.stringify(selected));
+}
 
-  function updateSelectedUI() {
-    const selected = getSelectedFromStorage();
-    const total = selected.reduce((sum, item) => sum + parseFloat(item.prix), 0);
-    totalPrice.textContent = total.toFixed(2);
+function updateSelectedUI() {
+  let selected = getSelectedFromStorage();
 
-    // Pagination
-    const totalPages = Math.max(Math.ceil(selected.length / itemsPerPage), 1);
-    if (currentPage > totalPages) currentPage = totalPages;
-    const start = (currentPage - 1) * itemsPerPage;
-    const pageItems = selected.slice(start, start + itemsPerPage);
+  // Calcul total en fonction des quantités
+  const total = selected.reduce((sum, item) => sum + item.prix * item.quantite, 0);
+  totalPrice.textContent = total.toFixed(2);
 
-    selectedList.innerHTML = '';
-    pageItems.forEach(item => {
-      const li = document.createElement('li');
-      li.className = 'list-group-item d-flex justify-content-between align-items-center';
-      li.innerHTML = `
-        <div>${item.nom} – ${item.prix} €</div>
-        <button class="btn btn-sm btn-outline-danger" onclick="removeFromSelection('${item.id}')">✕</button>
-      `;
-      selectedList.appendChild(li);
-    });
+  // Pagination
+  const totalPages = Math.max(Math.ceil(selected.length / itemsPerPage), 1);
+  if (currentPage > totalPages) currentPage = totalPages;
+  const start = (currentPage - 1) * itemsPerPage;
+  const pageItems = selected.slice(start, start + itemsPerPage);
 
-    // Mettre à jour la pagination
-    document.getElementById('pagination-info').textContent = `Page ${currentPage} / ${totalPages}`;
-    document.getElementById('prev-page').disabled = currentPage === 1;
-    document.getElementById('next-page').disabled = currentPage === totalPages;
-  }
+  selectedList.innerHTML = '';
+  pageItems.forEach(item => {
+    const li = document.createElement('li');
+    li.className = 'list-group-item d-flex justify-content-between align-items-center';
 
-  function removeFromSelection(id) {
-    let selected = getSelectedFromStorage().filter(item => item.id !== id);
-    saveSelectedToStorage(selected);
-    updateSelectedUI();
-    // Mettre à jour la checkbox si elle existe sur la page
-    checkboxes.forEach(cb => {
-      if (cb.value === id) cb.checked = false;
-    });
-  }
+    // On ajoute le selecteur nombre
+    li.innerHTML = `
+      <div>
+        ${item.nom} – ${item.prix} € x
+        <input type="number" min="1" value="${item.quantite}" style="width: 60px;" onchange="changeQuantity('${item.id}', this.value)">
+      </div>
+      <button class="btn btn-sm btn-outline-danger" onclick="removeFromSelection('${item.id}')">✕</button>
+    `;
+    selectedList.appendChild(li);
+  });
 
-  function clearSelection() {
-    localStorage.removeItem('selectedProducts');
-    currentPage = 1;
-    updateSelectedUI();
-    checkboxes.forEach(cb => cb.checked = false);
-  }
+  // Mettre à jour la pagination
+  document.getElementById('pagination-info').textContent = `Page ${currentPage} / ${totalPages}`;
+  document.getElementById('prev-page').disabled = currentPage === 1;
+  document.getElementById('next-page').disabled = currentPage === totalPages;
+}
 
-  function syncCheckboxes() {
-    checkboxes.forEach(cb => {
-      cb.addEventListener('change', () => {
-        let selected = getSelectedFromStorage();
+// Fonction appelée au changement de quantité
+function changeQuantity(id, value) {
+  let selected = getSelectedFromStorage();
+  const quantite = Math.max(1, parseInt(value) || 1); // au moins 1
 
-        if (cb.checked) {
-          const produit = {
-            id: cb.value,
-            nom: cb.dataset.nom,
-            prix: cb.dataset.prix
-          };
-          if (!selected.some(item => item.id === produit.id)) {
-            selected.push(produit);
-          }
-        } else {
-          selected = selected.filter(item => item.id !== cb.value);
+  selected = selected.map(item => {
+    if (item.id === id) {
+      return {...item, quantite};
+    }
+    return item;
+  });
+
+  saveSelectedToStorage(selected);
+  updateSelectedUI();
+}
+
+// Fonction pour supprimer un produit sélectionné
+function removeFromSelection(id) {
+  let selected = getSelectedFromStorage().filter(item => item.id !== id);
+  saveSelectedToStorage(selected);
+  updateSelectedUI();
+
+  // Mettre à jour la checkbox si elle existe sur la page
+  checkboxes.forEach(cb => {
+    if (cb.value === id) cb.checked = false;
+  });
+}
+
+// Vider la sélection
+function clearSelection() {
+  localStorage.removeItem('selectedProducts');
+  currentPage = 1;
+  updateSelectedUI();
+  checkboxes.forEach(cb => cb.checked = false);
+}
+
+// Synchroniser les checkboxes
+function syncCheckboxes() {
+  checkboxes.forEach(cb => {
+    cb.addEventListener('change', () => {
+      let selected = getSelectedFromStorage();
+
+      if (cb.checked) {
+        const produit = {
+          id: cb.value,
+          nom: cb.dataset.nom,
+          prix: parseFloat(cb.dataset.prix),
+          quantite: 1
+        };
+        if (!selected.some(item => item.id === produit.id)) {
+          selected.push(produit);
         }
+      } else {
+        selected = selected.filter(item => item.id !== cb.value);
+      }
 
-        saveSelectedToStorage(selected);
-        updateSelectedUI();
-      });
+      saveSelectedToStorage(selected);
+      updateSelectedUI();
     });
-  }
+  });
+}
 
-  // Gestion de la soumission
-  form.addEventListener('submit', (e) => {
-    form.querySelectorAll('input[name="produits"]').forEach(input => input.remove());
-    const selected = getSelectedFromStorage();
-    selected.forEach(item => {
+// Soumission du formulaire
+form.addEventListener('submit', (e) => {
+  // Supprime tous les inputs produits cachés déjà présents
+  form.querySelectorAll('input[name="produits"]').forEach(input => input.remove());
+
+  const selected = getSelectedFromStorage();
+
+  // Pour chaque produit, ajouter autant d'inputs cachés que la quantité
+  selected.forEach(item => {
+    for (let i = 0; i < item.quantite; i++) {
       const input = document.createElement('input');
       input.type = 'hidden';
       input.name = 'produits';
       input.value = item.id;
       form.appendChild(input);
-    });
-    localStorage.removeItem('selectedProducts');
-  });
-
-  // Pagination boutons
-  document.getElementById('prev-page').addEventListener('click', () => {
-    if (currentPage > 1) {
-      currentPage--;
-      updateSelectedUI();
     }
   });
 
-  document.getElementById('next-page').addEventListener('click', () => {
-    currentPage++;
-    updateSelectedUI();
-  });
+  // On vide le localStorage (optionnel, tu peux l'enlever si tu préfères garder la sélection)
+  localStorage.removeItem('selectedProducts');
+});
 
-  // Init
+// Pagination des produits sélectionnés
+document.getElementById('prev-page').addEventListener('click', () => {
+  if (currentPage > 1) {
+    currentPage--;
+    updateSelectedUI();
+  }
+});
+
+document.getElementById('next-page').addEventListener('click', () => {
+  currentPage++;
   updateSelectedUI();
-  syncCheckboxes();
+});
+
+// Initialisation
+updateSelectedUI();
+syncCheckboxes();
+
 </script>
 
 

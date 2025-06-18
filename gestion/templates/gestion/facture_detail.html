@@ -5,39 +5,29 @@
   <h2>Détail de la facture #{{ facture.id }}</h2>
 
   <!-- Bouton PDF en haut à droite -->
-    <a href="{% url 'facture_pdf' facture.id %}" class="btn btn-primary position-absolute top-0 end-0 mt-2 me-2" target="_blank">
-      Télécharger PDF
-    </a>
-
+  <a href="{% url 'facture_pdf' facture.id %}" class="btn btn-primary position-absolute top-0 end-0 mt-2 me-2" target="_blank">
+    Télécharger PDF
+  </a>
 
   <p>Date : {{ facture.date|date:"d/m/Y H:i" }}</p>
-  <p>Nombre de produits : {{ page_obj.paginator.count }}</p>
+  <p>Nombre de lignes : {{ facture.lignes.count }}</p>
   <p>Total : {{ facture.total }} €</p>
 
-  <ul class="list-group">
-    {% for produit in page_obj %}
-      <li class="list-group-item d-flex justify-content-between align-items-center">
-        <div>
-          ID article : {{ produit.id }} – {{ produit.nom }} – {{ produit.prix }} €
-        </div>
-      </li>
-    {% empty %}
-      <li class="list-group-item">Aucun produit trouvé.</li>
-    {% endfor %}
-  </ul>
+<ul class="list-group">
+  {% for ligne in page_obj %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <div>
+        ID article : {{ ligne.produit.id }} – {{ ligne.produit.nom }} – {{ ligne.prix_unitaire }} € x {{ ligne.quantite }} = {{ ligne.prix_total }} €
+      </div>
+    </li>
+  {% empty %}
+    <li class="list-group-item">Aucune ligne de facture trouvée.</li>
+  {% endfor %}
+</ul>
 
-  <!-- Pagination -->
-  <div class="pagination mt-4">
-    {% if page_obj.has_previous %}
-      <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&sort={{ sort_option }}" class="btn btn-outline-secondary">← Précédent</a>
-    {% endif %}
+<p>Total : {{ facture.total }} €</p>
+<p>Nombre de produits : {{ facture.nb_produits }}</p>
 
-    <span class="mx-3">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-
-    {% if page_obj.has_next %}
-      <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&sort={{ sort_option }}" class="btn btn-outline-secondary">Suivant →</a>
-    {% endif %}
-  </div>
 
   <a href="{% url 'facture_list' %}" class="btn btn-secondary mt-4">← Retour à la liste des factures</a>
 </div>

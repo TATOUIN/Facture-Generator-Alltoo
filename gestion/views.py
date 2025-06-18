@@ -3,6 +3,7 @@ from .models import Produit
 from django.core.paginator import Paginator
 from .forms import ProduitForm
 from .models import Facture
+from .models import LigneFacture
 from django.shortcuts import get_object_or_404
 from datetime import date
 from django.http import HttpResponse
@@ -10,6 +11,10 @@ from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.template.loader import get_template
 from xhtml2pdf import pisa
+from django.db.models import Sum
+from collections import Counter
+from django.shortcuts import redirect
+
 
 
 def produit_list(request):
@@ -84,10 +89,24 @@ def facture_creer(request):
     page_obj = paginator.get_page(page_number)
 
     if request.method == 'POST':
-        produits_ids = request.POST.getlist('produits')
+        produits_ids = request.POST.getlist('produits')  # ids potentiellement dupliqués pour la quantité
         if produits_ids:
             facture = Facture.objects.create()
-            facture.produits.set(produits_ids)
+
+            # Compter les quantités
+            quantites = Counter(produits_ids)
+
+            # Supposons que tu as un modèle LigneFacture avec un FK vers Facture et Produit + quantité
+            for produit_id, quantite in quantites.items():
+                produit = Produit.objects.get(pk=produit_id)
+                LigneFacture.objects.create(
+                    facture=facture,
+                    produit=produit,
+                    quantite=quantite,
+                    prix_unitaire=produit.prix,
+                    prix_total=produit.prix * quantite,
+                )
+
             return redirect('facture_detail', facture.id)
 
     return render(request, 'gestion/facture_creer.html', {
@@ -103,24 +122,23 @@ from django.core.paginator import Paginator
 def facture_detail(request, facture_id):
     facture = get_object_or_404(Facture, id=facture_id)
 
+    # Afficher les lignes de la facture
+    lignes = facture.lignes.select_related('produit').all()
+
+    # Recherche, tri et pagination sur les lignes
     search_query = request.GET.get('q', '')
     sort_option = request.GET.get('sort', 'id')
 
-    produits = facture.produits.all()
-
-    # Filtre recherche
     if search_query:
         if search_query.isdigit():
-            produits = produits.filter(id=search_query)
+            lignes = lignes.filter(produit__id=search_query)
         else:
-            produits = produits.filter(nom__icontains=search_query)
+            lignes = lignes.filter(produit__nom__icontains=search_query)
 
-    # Tri
-    if sort_option in ['id', '-id', 'nom', '-nom', 'prix', '-prix']:
-        produits = produits.order_by(sort_option)
+    if sort_option in ['id', '-id', 'produit__nom', '-produit__nom', 'prix_unitaire', '-prix_unitaire']:
+        lignes = lignes.order_by(sort_option)
 
-    # Pagination (5 produits par page)
-    paginator = Paginator(produits, 5)
+    paginator = Paginator(lignes, 5)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -134,20 +152,22 @@ def facture_detail(request, facture_id):
 
 def facture_list(request):
     search_query = request.GET.get('q', '')
-    sort_option = request.GET.get('sort', '-date')  # par défaut les plus récentes
+    sort_option = request.GET.get('sort', '-date')
 
     factures = Facture.objects.all()
 
-    # Recherche par ID exact
     if search_query.isdigit():
         factures = factures.filter(id=search_query)
-    # Autre possibilité : recherche plus large (à étendre si tu ajoutes des champs comme client)
     elif search_query:
-        factures = factures.none()  # car on ne peut pas chercher sur autre chose ici
+        factures = factures.none()
 
-    # Tri
+    # Annotation : somme des prix des produits liés à chaque facture
+    factures = factures.annotate(total=Sum('produits__prix'))
+
     if sort_option in ['date', '-date', 'total', '-total']:
         factures = factures.order_by(sort_option)
+    else:
+        factures = factures.order_by('-date')
 
     paginator = Paginator(factures, 7)
     page_number = request.GET.get('page')
@@ -196,10 +216,10 @@ def produit_modifier(request, produit_id):
 
 def facture_pdf(request, facture_id):
     facture = get_object_or_404(Facture, id=facture_id)
-    produits = facture.produits.all()
+    lignes = facture.lignes.select_related('produit').all()
 
     template = get_template('gestion/facture_pdf.html')
-    html = template.render({'facture': facture, 'produits': produits})
+    html = template.render({'facture': facture, 'lignes': lignes})
 
     response = HttpResponse(content_type='application/pdf')
     response['Content-Disposition'] = f'filename="facture_{facture.id}.pdf"'

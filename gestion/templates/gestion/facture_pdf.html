@@ -1,40 +1,79 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <title>Facture #{{ facture.id }}</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 20px; }
-      h2 { text-align: center; }
-      table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-      th, td { border: 1px solid #000; padding: 8px; text-align: left; }
-      th { background-color: #f0f0f0; }
-      .total { text-align: right; margin-top: 20px; font-weight: bold; }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Facture #{{ facture.id }}</title>
+  <style>
+    body {
+      font-family: 'Helvetica', Arial, sans-serif;
+      font-size: 12pt;
+      color: #333;
+      margin: 20px;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 10px 8px;
+    }
+    th {
+      background-color: #4CAF50;
+      color: white;
+      text-align: left;
+    }
+    tbody tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+    td:nth-child(4), td:nth-child(5), td:nth-child(6) {
+      text-align: right;
+    }
+    .total {
+      text-align: right;
+      margin-top: 20px;
+      font-weight: bold;
+      font-size: 1.1em;
+      border-top: 2px solid #4CAF50;
+      padding-top: 10px;
+      color: #4CAF50;
+    }
+  </style>
 </head>
 <body>
   <h2>Facture #{{ facture.id }}</h2>
   <p>Date : {{ facture.date|date:"d/m/Y H:i" }}</p>
+<table>
+  <thead>
+    <tr>
+      <th>ID Article</th>
+      <th>Nom</th>
+      <th>Date de péremption</th>
+      <th>Prix Unitaire (€)</th>
+      <th>Quantité</th>
+      <th>Prix Total (€)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ligne in facture.lignes.all %}
+    <tr>
+      <td>{{ ligne.produit.id }}</td>
+      <td>{{ ligne.produit.nom }}</td>
+      <td>{{ ligne.produit.date_peremption|date:"d/m/Y" }}</td>
+      <td>{{ ligne.prix_unitaire }}</td>
+      <td>{{ ligne.quantite }}</td>
+      <td>{{ ligne.prix_total }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-  <table>
-    <thead>
-      <tr>
-        <th>ID Article</th>
-        <th>Nom</th>
-        <th>Prix (€)</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for produit in produits %}
-      <tr>
-        <td>{{ produit.id }}</td>
-        <td>{{ produit.nom }}</td>
-        <td>{{ produit.prix }}</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<p class="total">Total : {{ facture.total }} €</p>
 
-  <p class="total">Total : {{ facture.total }} €</p>
 </body>
 </html>
