@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load customs_tags %}
+
 
 {% block content %}
     <div class="container mt-4">
@@ -47,8 +49,13 @@
       <li class="list-group-item">
         <strong>ID:</strong> {{ produit.id }} – <strong>{{ produit.nom }}</strong> – {{ produit.prix }} € – Péremption : {{ produit.date_peremption }}
         <div class="mt-1">
-          <a href="{% url 'produit_modifier' produit.id %}" class="btn btn-sm btn-warning">Modifier</a>
-          <a href="{% url 'produit_supprimer' produit.id %}" class="btn btn-sm btn-danger">Supprimer</a>
+        <button type="button" class="btn btn-sm btn-warning" data-bs-toggle="modal" data-bs-target="#modifierProduitModal{{ produit.id }}">
+          Modifier
+        </button>
+        <button type="button" class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal{{ produit.id }}">
+          Supprimer
+        </button>
+
         </div>
       </li>
     {% empty %}
@@ -94,6 +101,55 @@
     </div>
   </div>
 </div>
+
+     {% for produit in page_obj %}
+      {% if produit.id %}
+        <!-- Modal Bootstrap pour modifier le produit -->
+        <div class="modal fade" id="modifierProduitModal{{ produit.id }}" tabindex="-1" aria-labelledby="modifierProduitModalLabel{{ produit.id }}" aria-hidden="true">
+          <div class="modal-dialog modal-dialog-centered modal-custom-size">
+            <div class="modal-content">
+              <div class="modal-header">
+                <h5 class="modal-title" id="modifierProduitModalLabel{{ produit.id }}">Modifier le produit</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+              </div>
+              <div class="modal-body">
+                <form method="post" action="{% url 'produit_modifier' produit.id %}">
+                  {% csrf_token %}
+                  {{ form_modifier.produits_forms|get_item:produit.id }}
+                  <div class="text-end mt-2">
+                    <button type="submit" class="btn btn-primary">Enregistrer</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+
+{% for produit in produits_supprimer %}
+  <div class="modal fade" id="confirmDeleteModal{{ produit.id }}" tabindex="-1" aria-labelledby="confirmDeleteModalLabel{{ produit.id }}" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="confirmDeleteModalLabel{{ produit.id }}">Confirmer la suppression</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+        </div>
+        <div class="modal-body">
+          Êtes-vous sûr de vouloir supprimer le produit <strong>{{ produit.nom }}</strong> (ID: {{ produit.id }}) ?
+        </div>
+        <div class="modal-footer">
+          <form method="post" action="{% url 'produit_supprimer' produit.id %}">
+            {% csrf_token %}
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+            <button type="submit" class="btn btn-danger">Supprimer</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endfor %}
+
 
 
 {% endblock %}

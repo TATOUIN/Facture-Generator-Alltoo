@@ -5,7 +5,11 @@ from .forms import ProduitForm
 from .models import Facture
 from django.shortcuts import get_object_or_404
 from datetime import date
-
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django.template.loader import get_template
+from xhtml2pdf import pisa
 
 
 def produit_list(request):
@@ -38,13 +42,23 @@ def produit_list(request):
     else:
         form = ProduitForm()
 
+    produits_forms = {
+        produit.id: ProduitForm(instance=produit)
+        for produit in page_obj if produit.id is not None
+    }
+    produits_supprimer = [produit for produit in page_obj if produit.id is not None]
+
     return render(request, 'gestion/produit_list.html', {
         'page_obj': page_obj,
         'search_query': search_query,
         'sort_option': sort_option,
         'form': form,
-    })
+        'form_modifier': {
+            'produits_forms': produits_forms
+        },
+        'produits_supprimer': produits_supprimer,
 
+    })
 
 
 def facture_creer(request):
@@ -145,6 +159,7 @@ def facture_list(request):
         'sort_option': sort_option,
     })
 
+
 def produit_supprimer(request, produit_id):
     produit = get_object_or_404(Produit, id=produit_id)
     if request.method == 'POST':
@@ -154,7 +169,6 @@ def produit_supprimer(request, produit_id):
         'objet': produit,
         'type': 'produit'
     })
-
 
 
 def facture_supprimer(request, facture_id):
@@ -167,6 +181,7 @@ def facture_supprimer(request, facture_id):
         'type': 'facture'
     })
 
+
 def produit_modifier(request, produit_id):
     produit = get_object_or_404(Produit, id=produit_id)
     if request.method == 'POST':
@@ -177,3 +192,20 @@ def produit_modifier(request, produit_id):
     else:
         form = ProduitForm(instance=produit)
     return render(request, 'gestion/produit_form.html', {'form': form})
+
+
+def facture_pdf(request, facture_id):
+    facture = get_object_or_404(Facture, id=facture_id)
+    produits = facture.produits.all()
+
+    template = get_template('gestion/facture_pdf.html')
+    html = template.render({'facture': facture, 'produits': produits})
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = f'filename="facture_{facture.id}.pdf"'
+
+    pisa_status = pisa.CreatePDF(html, dest=response)
+    if pisa_status.err:
+        return HttpResponse('Erreur lors de la génération du PDF', status=500)
+
+    return response

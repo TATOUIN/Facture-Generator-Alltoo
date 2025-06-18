@@ -10,4 +10,6 @@ urlpatterns = [
     path('produit/<int:produit_id>/supprimer/', views.produit_supprimer, name='produit_supprimer'),
     path('facture/<int:facture_id>/supprimer/', views.facture_supprimer, name='facture_supprimer'),
     path('produit/<int:produit_id>/modifier/', views.produit_modifier, name='produit_modifier'),
+    path('facture/<int:facture_id>/pdf/', views.facture_pdf, name='facture_pdf'),
+
 ]

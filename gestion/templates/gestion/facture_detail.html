@@ -1,8 +1,15 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mt-4">
+<div class="container mt-4 position-relative">
   <h2>Détail de la facture #{{ facture.id }}</h2>
+
+  <!-- Bouton PDF en haut à droite -->
+    <a href="{% url 'facture_pdf' facture.id %}" class="btn btn-primary position-absolute top-0 end-0 mt-2 me-2" target="_blank">
+      Télécharger PDF
+    </a>
+
+
   <p>Date : {{ facture.date|date:"d/m/Y H:i" }}</p>
   <p>Nombre de produits : {{ page_obj.paginator.count }}</p>
   <p>Total : {{ facture.total }} €</p>
