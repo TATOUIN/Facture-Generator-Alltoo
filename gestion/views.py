@@ -29,21 +29,22 @@ def produit_list(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'gestion/produit_list.html', {
-        'page_obj': page_obj,
-        'search_query': search_query,
-        'sort_option': sort_option,
-    })
-
-def produit_ajouter(request):
+    # Si POST, traiter le formulaire ici
     if request.method == 'POST':
         form = ProduitForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('produit_list')
     else:
-        form = ProduitForm(initial={'date_peremption': date.today()})
-    return render(request, 'gestion/produit_form.html', {'form': form})
+        form = ProduitForm()
+
+    return render(request, 'gestion/produit_list.html', {
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'sort_option': sort_option,
+        'form': form,
+    })
+
 
 
 def facture_creer(request):
@@ -80,9 +81,41 @@ def facture_creer(request):
         'search_query': search_query,
         'sort_option': sort_option
     })
+
+
+from django.core.paginator import Paginator
+
+
 def facture_detail(request, facture_id):
-    facture = Facture.objects.get(id=facture_id)
-    return render(request, 'gestion/facture_detail.html', {'facture': facture})
+    facture = get_object_or_404(Facture, id=facture_id)
+
+    search_query = request.GET.get('q', '')
+    sort_option = request.GET.get('sort', 'id')
+
+    produits = facture.produits.all()
+
+    # Filtre recherche
+    if search_query:
+        if search_query.isdigit():
+            produits = produits.filter(id=search_query)
+        else:
+            produits = produits.filter(nom__icontains=search_query)
+
+    # Tri
+    if sort_option in ['id', '-id', 'nom', '-nom', 'prix', '-prix']:
+        produits = produits.order_by(sort_option)
+
+    # Pagination (5 produits par page)
+    paginator = Paginator(produits, 5)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'gestion/facture_detail.html', {
+        'facture': facture,
+        'page_obj': page_obj,
+        'search_query': search_query,
+        'sort_option': sort_option,
+    })
 
 
 def facture_list(request):
@@ -102,7 +135,7 @@ def facture_list(request):
     if sort_option in ['date', '-date', 'total', '-total']:
         factures = factures.order_by(sort_option)
 
-    paginator = Paginator(factures, 5)
+    paginator = Paginator(factures, 7)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -121,6 +154,8 @@ def produit_supprimer(request, produit_id):
         'objet': produit,
         'type': 'produit'
     })
+
+
 
 def facture_supprimer(request, facture_id):
     facture = get_object_or_404(Facture, id=facture_id)

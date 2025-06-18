@@ -5,7 +5,7 @@
 
   <h2>Liste des produits</h2>
 
-  <form method="get" class="row g-2 align-items-end mb-4">
+  <form method="get" class="row g-2 align-items-end mb-4 justify-content-between">
     <div class="col-sm-4">
       <label for="q" class="form-label">Recherche ID ou nom</label>
       <input type="text" name="q" id="q" value="{{ search_query }}" class="form-control" placeholder="ex: banane ou 12">
@@ -31,10 +31,15 @@
     <div class="col-auto">
       <a href="{% url 'produit_list' %}" class="btn btn-primary">↺ Réinitialiser</a>
     </div>
+      <div class="col-auto">
+    <!-- Bouton déclencheur -->
+    <button type="button" class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#ajoutProduitModal">
+      ➕ Ajouter un produit
+    </button>
 
+    </div>
   </form>
 
-  <a href="{% url 'produit_ajouter' %}" class="btn btn-success mb-3">➕ Ajouter un produit</a>
 
 
   <ul class="list-group">
@@ -65,4 +70,30 @@
     {% endif %}
   </div>
 </div>
+
+    <!-- Modal Bootstrap -->
+<div class="modal fade" id="ajoutProduitModal" tabindex="-1" aria-labelledby="ajoutProduitModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-custom-size">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="ajoutProduitModalLabel">Ajouter un produit</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+      </div>
+
+      <div class="modal-body">
+        <form method="post" action="{% url 'produit_list' %}">
+          {% csrf_token %}
+          {{ form.as_p }}
+            <div class="text-end">
+              <button type="submit" class="btn btn-primary">Ajouter</button>
+            </div>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
 {% endblock %}

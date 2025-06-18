@@ -1,16 +1,37 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<div class="container mt-4">
   <h2>Détail de la facture #{{ facture.id }}</h2>
-  <p>Date : {{ facture.date }}</p>
-  <p>Nombre de produits : {{ facture.nb_produits }}</p>
+  <p>Date : {{ facture.date|date:"d/m/Y H:i" }}</p>
+  <p>Nombre de produits : {{ page_obj.paginator.count }}</p>
   <p>Total : {{ facture.total }} €</p>
 
-  <ul>
-    {% for produit in facture.produits.all %}
-      <li>ID article : {{ produit.id }} - {{ produit.nom }} - {{ produit.prix }} €</li>
+  <ul class="list-group">
+    {% for produit in page_obj %}
+      <li class="list-group-item d-flex justify-content-between align-items-center">
+        <div>
+          ID article : {{ produit.id }} – {{ produit.nom }} – {{ produit.prix }} €
+        </div>
+      </li>
+    {% empty %}
+      <li class="list-group-item">Aucun produit trouvé.</li>
     {% endfor %}
   </ul>
 
-  <a href="{% url 'produit_list' %}">← Retour à la liste des produits</a>
+  <!-- Pagination -->
+  <div class="pagination mt-4">
+    {% if page_obj.has_previous %}
+      <a href="?page={{ page_obj.previous_page_number }}&q={{ search_query }}&sort={{ sort_option }}" class="btn btn-outline-secondary">← Précédent</a>
+    {% endif %}
+
+    <span class="mx-3">Page {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+
+    {% if page_obj.has_next %}
+      <a href="?page={{ page_obj.next_page_number }}&q={{ search_query }}&sort={{ sort_option }}" class="btn btn-outline-secondary">Suivant →</a>
+    {% endif %}
+  </div>
+
+  <a href="{% url 'facture_list' %}" class="btn btn-secondary mt-4">← Retour à la liste des factures</a>
+</div>
 {% endblock %}

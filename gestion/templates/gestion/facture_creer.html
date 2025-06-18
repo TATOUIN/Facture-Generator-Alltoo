@@ -40,7 +40,7 @@
                        data-nom="{{ produit.nom }}"
                        data-prix="{{ produit.prix }}"
                        class="form-check-input me-2">
-                ID :{{ produit.id }} - <strong>{{ produit.nom }}</strong> – {{ produit.prix }} €
+                ID : {{ produit.id }} - <strong>{{ produit.nom }}</strong> – {{ produit.prix }} € - Date de péremption : {{ produit.date_peremption|date:"d/m/Y" }}
               </div>
             </li>
           {% empty %}
