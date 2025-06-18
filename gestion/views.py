@@ -161,8 +161,8 @@ def facture_list(request):
     elif search_query:
         factures = factures.none()
 
-    # Annotation : somme des prix des produits liés à chaque facture
-    factures = factures.annotate(total=Sum('produits__prix'))
+    # Correction ici : annotation avec la bonne relation 'lignes' et le champ 'prix_total'
+    factures = factures.annotate(total_annotated=Sum('lignes__prix_total'))
 
     if sort_option in ['date', '-date', 'total', '-total']:
         factures = factures.order_by(sort_option)

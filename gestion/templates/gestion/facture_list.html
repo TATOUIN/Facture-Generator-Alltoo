@@ -33,7 +33,7 @@
       <li class="list-group-item d-flex justify-content-between align-items-center">
         <div>
           <a href="{% url 'facture_detail' facture.id %}">Facture #{{ facture.id }}</a>
-          – {{ facture.nb_produits }} produits – {{ facture.total }} € – {{ facture.date|date:"d/m/Y H:i" }}
+          – {{ facture.nb_produits }} produits – {{ facture.total_annotated|default:"0" }} € – {{ facture.date|date:"d/m/Y H:i" }}
         </div>
         <div>
           <a href="{% url 'facture_supprimer' facture.id %}" class="btn btn-sm btn-danger">Supprimer</a>
